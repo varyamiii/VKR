@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Результат теста · ATC Speech Trainer{% endblock %}
+{% block content %}
+<section class="section-head compact">
+    <p class="eyebrow">Result</p>
+    <h1>Результат тестирования</h1>
+</section>
+
+<section class="panel result-panel" data-session-id="{{ session_id }}">
+    <div id="result-area">Загрузка результата...</div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/test_result.js"></script>
+{% endblock %}

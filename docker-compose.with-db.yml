@@ -1,0 +1,56 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: vkr_atc_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: vkr_atc_training
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/create_vkr_atc_training_db.sql:/docker-entrypoint-initdb.d/01_create.sql:ro
+      - ./db/seed_vkr_atc_training_data.sql:/docker-entrypoint-initdb.d/02_seed.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d vkr_atc_training"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  tts_service:
+    build:
+      context: ./tts_service
+    container_name: vkr_atc_tts_service
+    environment:
+      MELO_LANGUAGE: ${MELO_LANGUAGE:-EN}
+      MELO_DEVICE: ${MELO_DEVICE:-cpu}
+      TTS_OUTPUT_DIR: /shared/generated_audio
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./backend/app/static/generated_audio:/shared/generated_audio
+      - ./hf_cache:/root/.cache/huggingface
+      - ./nltk_data:/root/nltk_data
+
+  backend:
+    build:
+      context: ./backend
+    container_name: vkr_atc_backend
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/vkr_atc_training
+      TTS_SERVICE_URL: http://tts_service:8001
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/app/static/generated_audio:/app/app/static/generated_audio
+      - ./backend/app/static/noises:/app/app/static/noises
+      - ./backend/app/static/reports:/app/app/static/reports
+    depends_on:
+      postgres:
+        condition: service_healthy
+      tts_service:
+        condition: service_started
+
+volumes:
+  postgres_data:

@@ -1,0 +1,30 @@
+services:
+  tts_service:
+    build:
+      context: ./tts_service
+    container_name: vkr_atc_tts_service
+    environment:
+      MELO_LANGUAGE: ${MELO_LANGUAGE:-EN}
+      MELO_DEVICE: ${MELO_DEVICE:-cpu}
+      TTS_OUTPUT_DIR: /shared/generated_audio
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./backend/app/static/generated_audio:/shared/generated_audio
+      - ./hf_cache:/root/.cache/huggingface
+      - ./nltk_data:/root/nltk_data
+
+  backend:
+    build:
+      context: ./backend
+    container_name: vkr_atc_backend
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/app/static/generated_audio:/app/app/static/generated_audio
+      - ./backend/app/static/noises:/app/app/static/noises
+      - ./backend/app/static/reports:/app/app/static/reports
+    depends_on:
+      - tts_service

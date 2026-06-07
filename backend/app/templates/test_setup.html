@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Настройка теста · ATC Speech Trainer{% endblock %}
+{% block content %}
+<section class="section-head">
+    <p class="eyebrow">Test setup</p>
+    <h1>Настройка тестирования</h1>
+    <p>Выберите тип теста, категории, акценты и шумы. Система сформирует 10 вопросов.</p>
+</section>
+
+<form id="test-setup-form" class="panel setup-panel">
+    <div class="form-row">
+        <label>
+            Тип теста
+            <select id="test-type" required>
+                <option value="choice">С вариантами ответов</option>
+                <option value="manual_input">С ручным вводом фразы</option>
+            </select>
+        </label>
+        <label>
+            Количество вопросов
+            <input id="questions-count" type="number" min="1" max="10" value="10">
+        </label>
+    </div>
+
+    <div class="choice-grid">
+        <div>
+            <h3>Категории</h3>
+            <div id="category-list" class="check-list"></div>
+        </div>
+        <div>
+            <h3>Акценты</h3>
+            <div id="accent-list" class="check-list"></div>
+        </div>
+        <div>
+            <h3>Шумы</h3>
+            <div id="noise-list" class="check-list"></div>
+        </div>
+    </div>
+
+    <button class="btn btn-primary" type="submit">Сформировать тест</button>
+    <p id="setup-status" class="status-text"></p>
+</form>
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/test_setup.js"></script>
+{% endblock %}

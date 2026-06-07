@@ -1,0 +1,7 @@
+.env
+__pycache__/
+*.pyc
+backend/app/static/generated_audio/*.wav
+backend/app/static/reports/*.pdf
+hf_cache/
+nltk_data/

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Главная · ATC Speech Trainer{% endblock %}
+{% block content %}
+<section class="hero">
+    <div class="hero-text">
+        <p class="eyebrow">Aviation English Listening</p>
+        <h1>Тренажёр восприятия авиационной речи</h1>
+        <p class="hero-description">
+            Система формирует английские авиационные фразы с разными акцентами и акустическими условиями,
+            а также позволяет проходить тестирование с формированием PDF-отчёта.
+        </p>
+        <div class="hero-actions">
+            <a class="btn btn-primary" href="/training">Начать тренировку</a>
+            <a class="btn btn-outline" href="/test/setup">Перейти к тесту</a>
+        </div>
+    </div>
+    <div class="radar-card">
+        <div class="radar-circle"></div>
+        <div class="radar-line"></div>
+        <p>RADIO LINK ACTIVE</p>
+    </div>
+</section>
+
+<section class="mode-grid">
+    <a class="mode-card" href="/training">
+        <span class="mode-icon">◉</span>
+        <h2>Учебный режим</h2>
+        <p>Выбор фразы, акцента и шума. Генерация WAV-файла и прослушивание результата.</p>
+    </a>
+    <a class="mode-card" href="/test/setup">
+        <span class="mode-icon">▣</span>
+        <h2>Тестирование</h2>
+        <p>Формирование теста из 10 вопросов, проверка ответов и подготовка PDF-отчёта.</p>
+    </a>
+</section>
+{% endblock %}

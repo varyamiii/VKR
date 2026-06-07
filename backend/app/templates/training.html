@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Учебный режим · ATC Speech Trainer{% endblock %}
+{% block content %}
+<section class="section-head">
+    <p class="eyebrow">Training mode</p>
+    <h1>Учебный режим</h1>
+    <p>Выберите фразу, акцент и акустические условия. Система сгенерирует аудиофрагмент для прослушивания.</p>
+</section>
+
+<section class="workspace two-columns">
+    <form id="training-form" class="panel form-panel">
+        <label>
+            Категория
+            <select id="category-select" required></select>
+        </label>
+        <label>
+            Фраза
+            <select id="phrase-select" required></select>
+        </label>
+        <label>
+            Акцент
+            <select id="accent-select" required></select>
+        </label>
+        <label>
+            Акустические условия
+            <select id="noise-select" required></select>
+        </label>
+        <label>
+            Скорость речи
+            <input id="speed-input" type="number" min="0.5" max="1.5" step="0.1" value="1.0">
+        </label>
+        <button class="btn btn-primary" type="submit">Сгенерировать аудио</button>
+        <p id="training-status" class="status-text"></p>
+    </form>
+
+    <div class="panel result-panel">
+        <h2>Результат</h2>
+        <div id="training-result" class="empty-state">
+            После генерации здесь появится аудиоплеер и эталонный текст фразы.
+        </div>
+    </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/training.js"></script>
+{% endblock %}

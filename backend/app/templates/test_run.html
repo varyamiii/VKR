@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Прохождение теста · ATC Speech Trainer{% endblock %}
+{% block content %}
+<section class="section-head compact">
+    <p class="eyebrow">Testing</p>
+    <h1>Прохождение теста</h1>
+</section>
+
+<section class="panel test-panel" data-session-id="{{ session_id }}">
+    <div class="progress-line">
+        <span id="question-counter">Вопрос</span>
+        <div class="progress-bar"><span id="progress-fill"></span></div>
+    </div>
+
+    <div id="question-area" class="question-area">
+        Загрузка вопроса...
+    </div>
+
+    <p id="test-status" class="status-text"></p>
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/test_run.js"></script>
+{% endblock %}
