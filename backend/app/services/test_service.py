@@ -62,9 +62,24 @@ def _load_answer_options(conn: psycopg.Connection, phrase_id: int) -> list[dict]
     return selected
 
 
-def create_test_session(
+
+def ensure_student_owns_attempt(conn: psycopg.Connection, *, attempt_id: int, student_id: int) -> None:
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT id
+            FROM app.test_attempts
+            WHERE id = %s AND student_id = %s;
+            """,
+            (attempt_id, student_id),
+        )
+        if not cur.fetchone():
+            raise ValueError("Тестовая попытка не найдена или недоступна текущему ученику")
+
+def create_test_attempt(
     conn: psycopg.Connection,
     *,
+    student_id: int,
     test_type: str,
     category_ids: list[int],
     accent_ids: list[int],
@@ -82,25 +97,25 @@ def create_test_session(
     with conn.cursor() as cur:
         cur.execute(
             """
-            INSERT INTO app.test_sessions (test_type, questions_count)
-            VALUES (%s, %s)
+            INSERT INTO app.test_attempts (student_id, test_type, questions_count)
+            VALUES (%s, %s, %s)
             RETURNING id;
             """,
-            (test_type, questions_count),
+            (student_id, test_type, questions_count),
         )
-        session_id = int(cur.fetchone()["id"])
+        attempt_id = int(cur.fetchone()["id"])
 
         cur.executemany(
-            "INSERT INTO app.test_session_categories (test_session_id, category_id) VALUES (%s, %s);",
-            [(session_id, value) for value in category_ids],
+            "INSERT INTO app.test_attempt_categories (test_attempt_id, category_id) VALUES (%s, %s);",
+            [(attempt_id, value) for value in category_ids],
         )
         cur.executemany(
-            "INSERT INTO app.test_session_accents (test_session_id, accent_id) VALUES (%s, %s);",
-            [(session_id, value) for value in accent_ids],
+            "INSERT INTO app.test_attempt_accents (test_attempt_id, accent_id) VALUES (%s, %s);",
+            [(attempt_id, value) for value in accent_ids],
         )
         cur.executemany(
-            "INSERT INTO app.test_session_noise_profiles (test_session_id, noise_profile_id) VALUES (%s, %s);",
-            [(session_id, value) for value in noise_profile_ids],
+            "INSERT INTO app.test_attempt_noise_profiles (test_attempt_id, noise_profile_id) VALUES (%s, %s);",
+            [(attempt_id, value) for value in noise_profile_ids],
         )
 
     category_plan = _planned_values(category_ids, questions_count)
@@ -125,7 +140,7 @@ def create_test_session(
             cur.execute(
                 """
                 INSERT INTO app.test_questions (
-                    test_session_id,
+                    test_attempt_id,
                     question_number,
                     phrase_id,
                     accent_id,
@@ -137,7 +152,7 @@ def create_test_session(
                 RETURNING id;
                 """,
                 (
-                    session_id,
+                    attempt_id,
                     index + 1,
                     phrase["id"],
                     accent_id,
@@ -163,10 +178,10 @@ def create_test_session(
                         (question_id, option["id"], order),
                     )
 
-    return session_id
+    return attempt_id
 
 
-def get_test_state(conn: psycopg.Connection, session_id: int) -> dict:
+def get_test_state(conn: psycopg.Connection, attempt_id: int) -> dict:
     with conn.cursor() as cur:
         cur.execute(
             """
@@ -178,10 +193,10 @@ def get_test_state(conn: psycopg.Connection, session_id: int) -> dict:
                 score_percent,
                 report_file_path,
                 finished_at
-            FROM app.test_sessions
+            FROM app.test_attempts
             WHERE id = %s;
             """,
-            (session_id,),
+            (attempt_id,),
         )
         session = cur.fetchone()
         if not session:
@@ -199,10 +214,10 @@ def get_test_state(conn: psycopg.Connection, session_id: int) -> dict:
                 ag.audio_file_path AS audio_url
             FROM app.test_questions q
             LEFT JOIN app.audio_generations ag ON ag.id = q.audio_generation_id
-            WHERE q.test_session_id = %s
+            WHERE q.test_attempt_id = %s
             ORDER BY q.question_number;
             """,
-            (session_id,),
+            (attempt_id,),
         )
         questions = [dict(row) for row in cur.fetchall()]
 
@@ -241,7 +256,7 @@ def get_test_state(conn: psycopg.Connection, session_id: int) -> dict:
 def submit_answer(
     conn: psycopg.Connection,
     *,
-    session_id: int,
+    attempt_id: int,
     question_id: int,
     answer_option_id: int | None = None,
     user_answer_text: str | None = None,
@@ -254,10 +269,10 @@ def submit_answer(
                 q.correct_answer_text,
                 s.test_type::text AS test_type
             FROM app.test_questions q
-            JOIN app.test_sessions s ON s.id = q.test_session_id
-            WHERE q.id = %s AND q.test_session_id = %s;
+            JOIN app.test_attempts s ON s.id = q.test_attempt_id
+            WHERE q.id = %s AND q.test_attempt_id = %s;
             """,
-            (question_id, session_id),
+            (question_id, attempt_id),
         )
         question = cur.fetchone()
         if not question:
@@ -306,7 +321,7 @@ def submit_answer(
     return is_correct
 
 
-def finish_test(conn: psycopg.Connection, session_id: int) -> dict:
+def finish_test(conn: psycopg.Connection, attempt_id: int) -> dict:
     with conn.cursor() as cur:
         cur.execute(
             """
@@ -315,9 +330,9 @@ def finish_test(conn: psycopg.Connection, session_id: int) -> dict:
                 COUNT(*) FILTER (WHERE is_correct IS TRUE) AS correct,
                 COUNT(*) FILTER (WHERE is_correct IS NOT NULL) AS answered
             FROM app.test_questions
-            WHERE test_session_id = %s;
+            WHERE test_attempt_id = %s;
             """,
-            (session_id,),
+            (attempt_id,),
         )
         stats = cur.fetchone()
         total = int(stats["total"])
@@ -329,26 +344,27 @@ def finish_test(conn: psycopg.Connection, session_id: int) -> dict:
         score = round((correct / total) * 100, 2) if total else 0.0
         cur.execute(
             """
-            UPDATE app.test_sessions
+            UPDATE app.test_attempts
             SET correct_answers_count = %s,
                 score_percent = %s,
                 finished_at = COALESCE(finished_at, now())
             WHERE id = %s;
             """,
-            (correct, score, session_id),
+            (correct, score, attempt_id),
         )
 
-    report_url = build_pdf_report(conn, session_id)
+    report_url = build_pdf_report(conn, attempt_id)
     return {
-        "session_id": session_id,
+        "session_id": attempt_id,
+        "attempt_id": attempt_id,
         "correct_answers_count": correct,
         "questions_count": total,
         "score_percent": score,
-        "result_url": f"/test/{session_id}/result",
+        "result_url": f"/test/{attempt_id}/result",
         "report_url": report_url,
     }
 
 
-def get_test_result(conn: psycopg.Connection, session_id: int) -> dict:
-    state = get_test_state(conn, session_id)
+def get_test_result(conn: psycopg.Connection, attempt_id: int) -> dict:
+    state = get_test_state(conn, attempt_id)
     return state

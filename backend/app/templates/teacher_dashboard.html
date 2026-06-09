@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Отчёты преподавателя · ATC Speech Trainer{% endblock %}
+{% block content %}
+<section class="section-head compact">
+    <p class="eyebrow">Teacher dashboard</p>
+    <h1>Отчёты преподавателя</h1>
+    <p>Сформируйте сводку по результатам тестирования учеников. Данные можно отфильтровать по группе, датам и типу теста.</p>
+</section>
+
+<section class="panel teacher-panel">
+    <div class="teacher-filters">
+        <label>
+            Группа
+            <select id="teacher-group">
+                <option value="">Все группы</option>
+            </select>
+        </label>
+        <label>
+            Тип теста
+            <select id="teacher-test-type">
+                <option value="">Все типы</option>
+                <option value="choice">С вариантами ответов</option>
+                <option value="manual_input">С ручным вводом</option>
+            </select>
+        </label>
+        <label>
+            Дата от
+            <input id="teacher-date-from" type="date">
+        </label>
+        <label>
+            Дата до
+            <input id="teacher-date-to" type="date">
+        </label>
+    </div>
+    <div class="hero-actions">
+        <button id="teacher-load-report" class="btn btn-primary" type="button">Показать результаты</button>
+        <button id="teacher-build-pdf" class="btn btn-outline" type="button">Сформировать PDF</button>
+    </div>
+    <p id="teacher-status" class="status-text"></p>
+</section>
+
+<section id="teacher-report" class="panel teacher-report hidden">
+    <h2>Сводка</h2>
+    <div class="stats-grid">
+        <div><strong id="stat-attempts">0</strong><span>Попыток</span></div>
+        <div><strong id="stat-avg">0%</strong><span>Средний результат</span></div>
+        <div><strong id="stat-best">0%</strong><span>Лучший результат</span></div>
+        <div><strong id="stat-min">0%</strong><span>Минимальный результат</span></div>
+    </div>
+
+    <h3>Результаты по ученикам</h3>
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr><th>Группа</th><th>Ученик</th><th>Попыток</th><th>Средний результат</th><th>Лучший результат</th></tr>
+            </thead>
+            <tbody id="students-report-body"></tbody>
+        </table>
+    </div>
+
+    <h3>Последние попытки</h3>
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr><th>Дата</th><th>Группа</th><th>Ученик</th><th>Тип</th><th>Результат</th><th>Параметры</th></tr>
+            </thead>
+            <tbody id="attempts-report-body"></tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/teacher_dashboard.js"></script>
+{% endblock %}

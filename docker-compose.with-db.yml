@@ -12,6 +12,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./db/create_vkr_atc_training_db.sql:/docker-entrypoint-initdb.d/01_create.sql:ro
       - ./db/seed_vkr_atc_training_data.sql:/docker-entrypoint-initdb.d/02_seed.sql:ro
+      - ./db/upgrade_auth_teacher_reports.sql:/docker-entrypoint-initdb.d/03_auth.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d vkr_atc_training"]
       interval: 5s
@@ -40,6 +41,7 @@ services:
     environment:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/vkr_atc_training
       TTS_SERVICE_URL: http://tts_service:8001
+      SESSION_SECRET_KEY: ${SESSION_SECRET_KEY:-local-vkr-secret-change-me}
     ports:
       - "8000:8000"
     volumes:

@@ -22,88 +22,7 @@ def _register_font() -> tuple[str, str]:
     return "Helvetica", "Helvetica-Bold"
 
 
-def build_pdf_report(conn: psycopg.Connection, session_id: int) -> str:
-    settings = get_settings()
-    settings.reports_dir.mkdir(parents=True, exist_ok=True)
-    report_filename = f"test_report_{session_id}.pdf"
-    report_path = settings.reports_dir / report_filename
-
-    with conn.cursor() as cur:
-        cur.execute(
-            """
-            SELECT
-                s.id,
-                s.test_type::text AS test_type,
-                s.questions_count,
-                s.correct_answers_count,
-                s.score_percent,
-                s.started_at,
-                s.finished_at
-            FROM app.test_sessions s
-            WHERE s.id = %s;
-            """,
-            (session_id,),
-        )
-        session = cur.fetchone()
-        if not session:
-            raise ValueError("Тестовая сессия не найдена")
-
-        cur.execute(
-            """
-            SELECT c.name_ru
-            FROM app.test_session_categories sc
-            JOIN app.phrase_categories c ON c.id = sc.category_id
-            WHERE sc.test_session_id = %s
-            ORDER BY c.name_ru;
-            """,
-            (session_id,),
-        )
-        categories = [row["name_ru"] for row in cur.fetchall()]
-
-        cur.execute(
-            """
-            SELECT a.name_ru
-            FROM app.test_session_accents sa
-            JOIN app.accents a ON a.id = sa.accent_id
-            WHERE sa.test_session_id = %s
-            ORDER BY a.name_ru;
-            """,
-            (session_id,),
-        )
-        accents = [row["name_ru"] for row in cur.fetchall()]
-
-        cur.execute(
-            """
-            SELECT n.name_ru
-            FROM app.test_session_noise_profiles sn
-            JOIN app.noise_profiles n ON n.id = sn.noise_profile_id
-            WHERE sn.test_session_id = %s
-            ORDER BY n.name_ru;
-            """,
-            (session_id,),
-        )
-        noises = [row["name_ru"] for row in cur.fetchall()]
-
-        cur.execute(
-            """
-            SELECT
-                q.question_number,
-                q.correct_answer_text,
-                COALESCE(q.user_answer_text, ao.option_text, '') AS user_answer,
-                q.is_correct,
-                a.name_ru AS accent_name,
-                n.name_ru AS noise_name
-            FROM app.test_questions q
-            JOIN app.accents a ON a.id = q.accent_id
-            JOIN app.noise_profiles n ON n.id = q.noise_profile_id
-            LEFT JOIN app.answer_options ao ON ao.id = q.selected_answer_option_id
-            WHERE q.test_session_id = %s
-            ORDER BY q.question_number;
-            """,
-            (session_id,),
-        )
-        questions = list(cur.fetchall())
-
+def _styles():
     font_name, font_bold = _register_font()
     styles = getSampleStyleSheet()
     title_style = ParagraphStyle(
@@ -122,6 +41,97 @@ def build_pdf_report(conn: psycopg.Connection, session_id: int) -> str:
         fontSize=10,
         leading=13,
     )
+    return font_name, font_bold, title_style, normal
+
+
+def build_pdf_report(conn: psycopg.Connection, attempt_id: int) -> str:
+    settings = get_settings()
+    settings.reports_dir.mkdir(parents=True, exist_ok=True)
+    report_filename = f"test_report_{attempt_id}.pdf"
+    report_path = settings.reports_dir / report_filename
+
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT
+                ta.id,
+                ta.test_type::text AS test_type,
+                ta.questions_count,
+                ta.correct_answers_count,
+                ta.score_percent,
+                ta.started_at,
+                ta.finished_at,
+                s.full_name AS student_name,
+                s.login AS student_login,
+                g.group_name
+            FROM app.test_attempts ta
+            LEFT JOIN app.students s ON s.id = ta.student_id
+            LEFT JOIN app.student_groups g ON g.id = s.group_id
+            WHERE ta.id = %s;
+            """,
+            (attempt_id,),
+        )
+        attempt = cur.fetchone()
+        if not attempt:
+            raise ValueError("Тестовая попытка не найдена")
+
+        cur.execute(
+            """
+            SELECT c.name_ru
+            FROM app.test_attempt_categories tac
+            JOIN app.phrase_categories c ON c.id = tac.category_id
+            WHERE tac.test_attempt_id = %s
+            ORDER BY c.name_ru;
+            """,
+            (attempt_id,),
+        )
+        categories = [row["name_ru"] for row in cur.fetchall()]
+
+        cur.execute(
+            """
+            SELECT a.name_ru
+            FROM app.test_attempt_accents taa
+            JOIN app.accents a ON a.id = taa.accent_id
+            WHERE taa.test_attempt_id = %s
+            ORDER BY a.name_ru;
+            """,
+            (attempt_id,),
+        )
+        accents = [row["name_ru"] for row in cur.fetchall()]
+
+        cur.execute(
+            """
+            SELECT n.name_ru
+            FROM app.test_attempt_noise_profiles tan
+            JOIN app.noise_profiles n ON n.id = tan.noise_profile_id
+            WHERE tan.test_attempt_id = %s
+            ORDER BY n.name_ru;
+            """,
+            (attempt_id,),
+        )
+        noises = [row["name_ru"] for row in cur.fetchall()]
+
+        cur.execute(
+            """
+            SELECT
+                q.question_number,
+                q.correct_answer_text,
+                COALESCE(q.user_answer_text, ao.option_text, '') AS user_answer,
+                q.is_correct,
+                a.name_ru AS accent_name,
+                n.name_ru AS noise_name
+            FROM app.test_questions q
+            JOIN app.accents a ON a.id = q.accent_id
+            JOIN app.noise_profiles n ON n.id = q.noise_profile_id
+            LEFT JOIN app.answer_options ao ON ao.id = q.selected_answer_option_id
+            WHERE q.test_attempt_id = %s
+            ORDER BY q.question_number;
+            """,
+            (attempt_id,),
+        )
+        questions = list(cur.fetchall())
+
+    font_name, _, title_style, normal = _styles()
 
     doc = SimpleDocTemplate(
         str(report_path),
@@ -134,14 +144,16 @@ def build_pdf_report(conn: psycopg.Connection, session_id: int) -> str:
 
     elements = [
         Paragraph("Отчёт о прохождении тестирования", title_style),
-        Paragraph(f"Номер тестовой сессии: {session['id']}", normal),
-        Paragraph(f"Тип теста: {session['test_type']}", normal),
+        Paragraph(f"Номер попытки: {attempt['id']}", normal),
+        Paragraph(f"Ученик: {attempt['student_name'] or '-'}", normal),
+        Paragraph(f"Группа: {attempt['group_name'] or '-'}", normal),
+        Paragraph(f"Тип теста: {attempt['test_type']}", normal),
         Paragraph(f"Категории: {', '.join(categories) if categories else '-'}", normal),
         Paragraph(f"Акценты: {', '.join(accents) if accents else '-'}", normal),
         Paragraph(f"Акустические условия: {', '.join(noises) if noises else '-'}", normal),
-        Paragraph(f"Количество вопросов: {session['questions_count']}", normal),
-        Paragraph(f"Правильных ответов: {session['correct_answers_count']}", normal),
-        Paragraph(f"Итоговый результат: {session['score_percent']}%", normal),
+        Paragraph(f"Количество вопросов: {attempt['questions_count']}", normal),
+        Paragraph(f"Правильных ответов: {attempt['correct_answers_count']}", normal),
+        Paragraph(f"Итоговый результат: {attempt['score_percent']}%", normal),
         Spacer(1, 14),
     ]
 
@@ -175,11 +187,11 @@ def build_pdf_report(conn: psycopg.Connection, session_id: int) -> str:
     with conn.cursor() as cur:
         cur.execute(
             """
-            UPDATE app.test_sessions
+            UPDATE app.test_attempts
             SET report_file_path = %s
             WHERE id = %s;
             """,
-            (public_path, session_id),
+            (public_path, attempt_id),
         )
 
     return public_path

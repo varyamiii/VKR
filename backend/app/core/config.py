@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     default_questions_count: int = 10
     default_speed: float = 1.0
     report_font_path: str = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+    session_secret_key: str = "change-me-for-local-vkr-demo"
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 

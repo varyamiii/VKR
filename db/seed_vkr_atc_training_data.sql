@@ -8,10 +8,10 @@
 --
 -- Не заполняются runtime-таблицы:
 --   app.audio_generations,
---   app.test_sessions,
---   app.test_session_categories,
---   app.test_session_accents,
---   app.test_session_noise_profiles,
+--   app.test_attempts,
+--   app.test_attempt_categories,
+--   app.test_attempt_accents,
+--   app.test_attempt_noise_profiles,
 --   app.test_questions,
 --   app.test_question_options.
 -- Они должны наполняться во время работы приложения.

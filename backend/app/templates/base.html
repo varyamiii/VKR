@@ -17,8 +17,17 @@
             </span>
         </a>
         <nav class="nav">
-            <a href="/training">Учебный режим</a>
-            <a href="/test/setup">Тестирование</a>
+            {% if user and user.role == "student" %}
+                <a href="/training">Учебный режим</a>
+                <a href="/test/setup">Тестирование</a>
+                <a href="/auth/logout">Выход</a>
+            {% elif user and user.role == "teacher" %}
+                <a href="/teacher/dashboard">Отчёты</a>
+                <a href="/auth/logout">Выход</a>
+            {% else %}
+                <a href="/login/student">Ученик</a>
+                <a href="/login/teacher">Преподаватель</a>
+            {% endif %}
         </nav>
     </header>
 

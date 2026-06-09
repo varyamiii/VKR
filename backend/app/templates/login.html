@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} · ATC Speech Trainer{% endblock %}
+{% block content %}
+<section class="section-head compact">
+    <p class="eyebrow">Authorization</p>
+    <h1>{{ title }}</h1>
+    <p>Введите логин и пароль для доступа к соответствующему разделу системы.</p>
+</section>
+
+<form id="login-form" class="panel auth-panel" data-role="{{ role }}">
+    <label>
+        Логин
+        <input id="login" type="text" autocomplete="username" required>
+    </label>
+    <label>
+        Пароль
+        <input id="password" type="password" autocomplete="current-password" required>
+    </label>
+    <button class="btn btn-primary" type="submit">Войти</button>
+    <p id="login-status" class="status-text"></p>
+</form>
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/login.js"></script>
+{% endblock %}

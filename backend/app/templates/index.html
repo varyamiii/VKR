@@ -1,35 +1,32 @@
 {% extends "base.html" %}
-{% block title %}Главная · ATC Speech Trainer{% endblock %}
+{% block title %}ATC Speech Trainer{% endblock %}
 {% block content %}
 <section class="hero">
-    <div class="hero-text">
+    <div>
         <p class="eyebrow">Aviation English Listening</p>
         <h1>Тренажёр восприятия авиационной речи</h1>
-        <p class="hero-description">
-            Система формирует английские авиационные фразы с разными акцентами и акустическими условиями,
-            а также позволяет проходить тестирование с формированием PDF-отчёта.
-        </p>
+        <p class="hero-description">Система формирует английские авиационные фразы с разными акцентами и акустическими условиями, позволяет проходить тестирование и формировать отчёты.</p>
         <div class="hero-actions">
-            <a class="btn btn-primary" href="/training">Начать тренировку</a>
-            <a class="btn btn-outline" href="/test/setup">Перейти к тесту</a>
+            <a class="btn btn-primary" href="/login/student">Войти как ученик</a>
+            <a class="btn btn-outline" href="/login/teacher">Войти как преподаватель</a>
         </div>
     </div>
-    <div class="radar-card">
+    <div class="radar-card" aria-hidden="true">
         <div class="radar-circle"></div>
         <div class="radar-line"></div>
     </div>
 </section>
 
 <section class="mode-grid">
-    <a class="mode-card" href="/training">
-        <span class="mode-icon">◉</span>
-        <h2>Учебный режим</h2>
-        <p>Выбор фразы, акцента и шума. Генерация WAV-файла и прослушивание результата.</p>
+    <a class="mode-card" href="/login/student">
+        <div class="mode-icon">◉</div>
+        <h2>Ученик</h2>
+        <p>Учебный режим, тестирование, прослушивание аудио и получение индивидуального PDF-отчёта.</p>
     </a>
-    <a class="mode-card" href="/test/setup">
-        <span class="mode-icon">▣</span>
-        <h2>Тестирование</h2>
-        <p>Формирование теста из 10 вопросов, проверка ответов и подготовка PDF-отчёта.</p>
+    <a class="mode-card" href="/login/teacher">
+        <div class="mode-icon">▣</div>
+        <h2>Преподаватель</h2>
+        <p>Просмотр результатов учеников, фильтрация по группе и формирование сводного отчёта.</p>
     </a>
 </section>
 {% endblock %}
